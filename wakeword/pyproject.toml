@@ -1,0 +1,13 @@
+[project]
+name        = "wake-word-detector"
+version     = "0.0.1"
+description = "building a tensorflow lite model for wake word detection"
+readme      = "README.md"
+requires-python = ">=3.9.0"
+dependencies    = [
+  "numpy>=1.24.1"
+]
+
+[tool.yapf]
+based_on_style = "pep8"
+column_limit = 120
