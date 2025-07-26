@@ -1,6 +1,6 @@
 #include <ModelInference.h>
 
-constexpr int kTensorArenaSize = 70 * 1024;
+constexpr int kTensorArenaSize = 100 * 1024;
 static uint8_t tensor_arena[kTensorArenaSize];
 
 static const tflite::Model *model = nullptr;
@@ -8,15 +8,9 @@ static tflite::MicroInterpreter *interpreter = nullptr;
 static TfLiteTensor *input = nullptr;
 static TfLiteTensor *output = nullptr;
 
-const float input_scale = 0.0300050f;
-const int input_zero_point = 72;
-const float output_scale = 0.0039063f;
-const int output_zero_point = -128;
-
 float hann_window[FRAME_LEN];
 float fft_input[2 * FFT_SIZE];
-float fft_output[FFT_SIZE];
-float mag[FFT_SIZE / 2];
+float mag[FFT_SIZE / 2 + 1];
 
 void setupModel() {
     model = tflite::GetModel(detection_model);
@@ -54,7 +48,7 @@ void setupModel() {
     Serial.println("Model loaded and interpreter initialized.");
 }
 
-void preprocessAudioToSpectrogram(const int16_t *audio, int audio_len, int8_t *output_tensor_data) {
+void preprocessAudioToSpectrogram(const int16_t *audio, int audio_len, float *output_tensor_data) {
     for (int t = 0; t < SPECTROGRAM_W; t++) {
         int offset = t * FRAME_STEP;
 
@@ -67,9 +61,8 @@ void preprocessAudioToSpectrogram(const int16_t *audio, int audio_len, int8_t *o
 
         dsps_fft2r_fc32((float *)fft_input, FFT_SIZE);
         dsps_bit_rev_fc32((float *)fft_input, FFT_SIZE);
-        dsps_cplx2reC_fc32((float *)fft_input, FFT_SIZE);
 
-        for (int i = 0; i < FFT_SIZE / 2; i++) {
+        for (int i = 0; i <= FFT_SIZE / 2; i++) {
             float real = fft_input[i * 2];
             float imag = fft_input[i * 2 + 1];
             mag[i] = sqrt(real * real + imag * imag);
@@ -77,43 +70,32 @@ void preprocessAudioToSpectrogram(const int16_t *audio, int audio_len, int8_t *o
 
         for (int j = 0; j < SPECTROGRAM_H; j++) {
             float avg = 0.0f;
+            int count = 0;
+
             for (int k = 0; k < POOL_SIZE; k++) {
                 int bin = j * POOL_SIZE + k;
-                if (bin < FFT_SIZE / 2) {
-                    avg += mag[bin];
-                }
+                if (bin >= (FFT_SIZE / 2 + 1)) break;
+                avg += mag[bin];
+                count++;
             }
-            avg /= POOL_SIZE;
+
+            avg = (count > 0) ? (avg / count) : 0.0f;
 
             float log_val = log10f(avg + EPSILON);
-
-            int8_t q = static_cast<int8_t>(round((log_val / input_scale) + input_zero_point));
-            q = std::max((int8_t)-128, std::min((int8_t)127, q));
-
-            output_tensor_data[t * SPECTROGRAM_H + j] = q;
+            output_tensor_data[t * SPECTROGRAM_H + j] = log_val;
         }
     }
 }
 
-bool runInference(int16_t *samples) {
-    preprocessAudioToSpectrogram(samples, SAMPLE_RATE, input->data.int8);
-    
+bool runInference(const int16_t *samples) {
+    preprocessAudioToSpectrogram(samples, SAMPLE_RATE, input->data.f);
     if (interpreter->Invoke() != kTfLiteOk) {
         Serial.println("Invoke failed");
         return false;
     }
-
-    int8_t q = output->data.int8[0];
-    float prob_juan = (q - output_zero_point) * output_scale;
+    float prob_juan = output->data.f[0];
     prob_juan = std::min(1.0f, std::max(0.0f, prob_juan));
-
-    Serial.print("Prediction (juan): ");
-    Serial.print(prob_juan * 100.0f);
-    Serial.println(" %");
-
-    Serial.print("Prediction (none): ");
-    Serial.print((1.0f - prob_juan) * 100.0f);
-    Serial.println(" %");
+    Serial.println(prob_juan);
 
     return prob_juan > 0.8f;
 }

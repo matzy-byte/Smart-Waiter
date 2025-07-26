@@ -21,9 +21,11 @@ void setup() {
 
 void loop() {
     readMicrophoneSamples(rawSamples, SAMPLE_COUNT);
-    downsample(rawSamples, processedSamples, SAMPLE_COUNT);
-
-    if (runInference(processedSamples)) {
+    downsample(rawSamples, processesSamples);
+    
+    if (runInference(processesSamples)) {
         playMelody();
+        delay(5000);
     }
+    delay(100);
 }

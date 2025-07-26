@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 int32_t *rawSamples = nullptr;
-int16_t *processedSamples = nullptr;
+int16_t *processesSamples = nullptr;
 
 void setupMicrophone() {
     i2s_config_t config = {
@@ -31,7 +31,7 @@ void setupMicrophone() {
     i2s_zero_dma_buffer(I2S_MICROPHONE_NUM);
 
     rawSamples = (int32_t *)heap_caps_malloc(SAMPLE_COUNT * sizeof(int32_t), MALLOC_CAP_SPIRAM);
-    processedSamples = (int16_t *)heap_caps_malloc(SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    processesSamples = (int16_t *)heap_caps_malloc(SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 }
 
 void readMicrophoneSamples(int32_t *buffer, size_t sampleCount) {
@@ -39,8 +39,8 @@ void readMicrophoneSamples(int32_t *buffer, size_t sampleCount) {
     i2s_read(I2S_MICROPHONE_NUM, buffer, sampleCount * sizeof(int32_t), &readBytes, portMAX_DELAY);
 }
 
-void downsample(int32_t* input, int16_t* output, size_t count) {
-    for (size_t i = 0; i < count; i++) {
-        output[i] = (int16_t)(input[i] >> 14);
+void downsample(int32_t *input, int16_t *output) {
+    for (int i = 0; i < SAMPLE_COUNT; i++) {
+        output[i] = (int16_t)(input[i] >> 16) + 3200;
     }
 }

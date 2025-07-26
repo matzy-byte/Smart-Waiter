@@ -12,10 +12,10 @@
 #define SAMPLE_COUNT (SAMPLE_RATE * 1)
 
 extern int32_t* rawSamples;
-extern int16_t* processedSamples;
+extern int16_t* processesSamples;
 
 void setupMicrophone();
 void readMicrophoneSamples(int32_t* buffer, size_t sampleCount);
-void downsample(int32_t* input, int16_t* output, size_t count);
+void downsample(int32_t *input, int16_t *output);
 
 #endif

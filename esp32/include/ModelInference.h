@@ -22,7 +22,7 @@
 #define SPECTROGRAM_H 22
 
 void setupModel();
-void preprocessAudioToSpectrogram(const int16_t* audio, int audio_len, int8_t* output_tensor_data);
-bool runInference(int16_t* samples);
+void preprocessAudioToSpectrogram(const int16_t* audio, int audio_len, float* output_tensor_data);
+bool runInference(const int16_t* samples);
 
 #endif
