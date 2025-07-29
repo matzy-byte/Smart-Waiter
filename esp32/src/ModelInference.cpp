@@ -13,7 +13,7 @@ float fft_input[2 * FFT_SIZE];
 float mag[FFT_SIZE / 2 + 1];
 
 void setupModel() {
-    model = tflite::GetModel(detection_model);
+    model = tflite::GetModel(lite_model);
     if (model->version() != TFLITE_SCHEMA_VERSION) {
         Serial.printf("Model schema mismatch: %d vs %d\n", model->version(), TFLITE_SCHEMA_VERSION);
         return;
@@ -97,5 +97,5 @@ bool runInference(const int16_t *samples) {
     prob_juan = std::min(1.0f, std::max(0.0f, prob_juan));
     Serial.println(prob_juan);
 
-    return prob_juan > 0.8f;
+    return prob_juan >= 0.99f;
 }
