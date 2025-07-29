@@ -1,8 +1,12 @@
 wget http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz
 mkdir speech_commands
 tar -xvzf speech_commands_v0.02.tar.gz -C speech_commands
+tar -xvzf personal_juan_dataset.tar.gz
 
-python3 SortData.py
+python3 util/SortData.py
+python3 util/AugmentWakeword.py
+python3 util/AugmentBackground.py
 
 rm -rf speech_commands
+rm -rf personal_juan_dataset
 rm speech_commands_v0.02.tar.gz

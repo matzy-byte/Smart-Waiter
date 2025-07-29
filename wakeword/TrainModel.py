@@ -33,7 +33,8 @@ def main():
     (x_train, y_train), (x_val, y_val), (x_test, y_test) = shuffle_datasets([(x_train, y_train),
                                                                              (x_val, y_val),
                                                                              (x_test, y_test)])
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).repeat().batch(BATCH_SIZE) \
+                                                                                   .prefetch(tf.data.AUTOTUNE)
     validation_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(BATCH_SIZE) \
                                                                            .prefetch(tf.data.AUTOTUNE)
     test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
@@ -109,9 +110,9 @@ def main():
     complete_train_y = np.concatenate((y_train, y_val, y_test))
     del y_train, y_val, y_test
 
-    (complete_train_x, complete_train_y) = shuffle_datasets([(complete_train_x, complete_train_y)])
+    (complete_train_x, complete_train_y) = shuffle_datasets([(complete_train_x, complete_train_y)])[0]
     complete_train_dataset = tf.data.Dataset.from_tensor_slices((complete_train_x, complete_train_y)) \
-                                            .batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+                                            .repeat().batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
     model2 = keras.models.load_model("model/trained_model.keras")
     model2.fit(

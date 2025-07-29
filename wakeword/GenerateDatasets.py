@@ -1,14 +1,13 @@
 import tensorflow as tf
-import tensorflow_io as tfio
-import numpy as np
-import os
-import glob
 from tqdm import tqdm
-
+import numpy as np
 
 LABELS = ["none", "juan"]
 SAMPLES = 16000
 
+TRAIN = []
+VALIDATE = []
+TEST = []
 TRAIN_SIZE = 0.8
 VALIDATION_SIZE = 0.1
 TEST_SIZE = 0.1
@@ -50,22 +49,16 @@ def get_spectrogram(audio):
     return spectrogram
 
 
-def process_file(file, repeat = 1):
+def process_file(file):
     audio_binary = tf.io.read_file(file)
     audio_tensor = tf.audio.decode_wav(audio_binary)
     audio = audio_tensor.audio
-
-    if repeat > 1:
-        voice_start, voice_end = tfio.audio.trim(audio, axis=0, epsilon=0.1)
-        end_gap=len(audio) - voice_end
-        random_offset = np.random.uniform(0, voice_start + end_gap)
-        audio = np.roll(audio,-random_offset + end_gap)
 
     audio = tf.reshape(audio, [-1])
     return get_spectrogram(audio)
 
 
-def process_label(label, repeat = 1):
+def process_label(label):
     global LABELS
 
     index = LABELS.index(label)
@@ -75,85 +68,51 @@ def process_label(label, repeat = 1):
     np.random.shuffle(files)
     train_size = int(TRAIN_SIZE * len(files))
     validation_size = int(VALIDATION_SIZE * len(files))
-    splits = {
-        "training": files[:train_size],
-        "validation": files[train_size:train_size + validation_size],
-        "test": files[train_size + validation_size:]
-    }
+    splits = [
+        (TRAIN, files[:train_size]),
+        (VALIDATE, files[train_size:train_size + validation_size]),
+        (TEST, files[train_size + validation_size:])
+    ]
 
-    for split_name, split_files in splits.items():
-        specs, labels = [], []
-        for f in tqdm(tf.repeat(split_files, repeat).numpy(), desc=f"{split_name} ({label})", leave=False):
-            spec = process_file(f, repeat)
-            specs.append(spec)
-            labels.append(index)
-        np.savez_compressed(f"data/{split_name}_{label}.npz", X=specs, Y=labels)
-        print(f"Saved {split_name}_{label}.npz with {len(specs)} samples")
+    for (split, split_files) in splits:
+        for f in tqdm(split_files, desc=f"{label}", leave=False):
+            spec = process_file(f)
+            split.append((spec, index))
 
 
-def process_background(file, index):
-    global SAMPLES, TRAIN_SIZE, VALIDATION_SIZE, TEST_SIZE
+def process_background():
+    global LABELS
+    
+    bg_files = [file_name for file_name in tqdm(get_files("noise"),
+                                             desc="Checking files",
+                                             leave=False) if is_valid_file(file_name)]
+    train_size = int(TRAIN_SIZE * len(bg_files))
+    validation_size = int(VALIDATION_SIZE * len(bg_files))
+    splits = [
+        (TRAIN, bg_files[:train_size]),
+        (VALIDATE, bg_files[train_size:train_size + validation_size]),
+        (TEST, bg_files[train_size + validation_size:])
+    ]
 
-    audio_binary = tf.io.read_file(file)
-    audio_tensor = tf.audio.decode_wav(audio_binary)
-    audio = audio_tensor.audio
-    audio = tf.reshape(audio, [-1])
-    samples, labels = [], []
-
-    for section_start in tqdm(range(0, len(audio) - SAMPLES, 4000), desc=file, leave=False):
-        section_end = section_start + SAMPLES
-        section = audio[section_start:section_end]
-        spectrogram = get_spectrogram(section)
-        samples.append(spectrogram)
-        labels.append(index)
-
-    np.random.shuffle(samples)
-    train_size=int(TRAIN_SIZE*len(samples))
-    validation_size=int(VALIDATION_SIZE*len(samples))
-    splits = {
-        "training": (samples[:train_size], labels[:train_size]),
-        "validation": (samples[train_size:train_size + validation_size], labels[train_size:train_size + validation_size]),
-        "test": (samples[train_size + validation_size:], labels[train_size + validation_size:])
-    }
-
-    for split_name, (_samples, _labels) in splits.items():
-        np.savez_compressed(f"data/{split_name}_background.npz", X=_samples, Y=_labels)
-        print(f"Saved {split_name}_background.npz with {len(_samples)} samples")
-
-
-def load_and_combine_datasets(pattern):
-    files = glob.glob(pattern)
-    X_all, Y_all = [], []
-    for file in files:
-        with np.load(file, allow_pickle=True) as data:
-            X_all.extend(data["X"])
-            Y_all.extend(data["Y"])
-
-    X_all = np.stack(X_all)
-    Y_all = np.array(Y_all)
-    return X_all, Y_all, files
+    for (split, split_files) in splits:
+        for f in tqdm(split_files, desc=f"processing background", leave=False):
+            spec = process_file(f)
+            split.append((spec, LABELS.index("none")))
 
 
 def main():
-    global LABELS
-
     for label in tqdm(LABELS, desc="Processing labels"):
-        repeat = 50 if label == "juan" else 1
-        process_label(label, repeat)
-    
-    for file in tqdm(get_files("_background"), desc="Processing background noise"):
-        process_background(file, LABELS.index("none"))
-    
-    all_files_to_delete = []
-    for split in ["training", "validation", "test"]:
-        X, Y, files_used = load_and_combine_datasets(f"data/{split}_*.npz")
-        np.savez_compressed(f"data/{split}_spectrogram.npz", X=X, Y=Y)
-        all_files_to_delete.extend(files_used)
-    for file in all_files_to_delete:
-        try:
-            os.remove(file)
-        except Exception as e:
-            print(f"Failed to delete {file}: {e}")
+        process_label(label)
+
+    process_background()
+
+    train_specs, train_labels = zip(*TRAIN)
+    val_specs, val_labels = zip(*VALIDATE)
+    test_specs, test_labels = zip(*TEST)
+
+    np.savez_compressed("data/training_spectrogram.npz", X=np.stack(train_specs), Y=np.array(train_labels))
+    np.savez_compressed("data/validation_spectrogram.npz", X=np.stack(val_specs), Y=np.array(val_labels))
+    np.savez_compressed("data/test_spectrogram.npz", X=np.stack(test_specs), Y=np.array(test_labels))
 
 
 if __name__ == "__main__":
