@@ -1,12 +1,12 @@
 #include <Speaker.h>
 
-int16_t *melody;
+int16_t *responseAudio;
 
 void setupSpeaker() {
     i2s_config_t config = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
         .sample_rate = SAMPLE_RATE,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .intr_alloc_flags = 0,
@@ -28,14 +28,33 @@ void setupSpeaker() {
     i2s_set_pin(I2S_SPEAKER_NUM, &pinConfig);
     i2s_zero_dma_buffer(I2S_SPEAKER_NUM);
 
-    melody = (int16_t *)heap_caps_malloc(SPEAKER_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    responseAudio = (int16_t *)heap_caps_malloc(SPEAKER_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+}
+
+void loadAudio() {
+    int randomNumber = (esp_random() % (5 - 1 + 1)) + 1;
+    char filename[32];
+    snprintf(filename, sizeof(filename), "/%s%d.wav", "Miguel", randomNumber);
+
+    
+    File file = SPIFFS.open(filename, "rb");
+    if (!file || file.isDirectory()) {
+        Serial.println("File open failed");
+        return;
+    }
+    file.seek(44);
+
+    size_t dataSize = file.size() - 44;
+    if (dataSize > SPEAKER_SAMPLE_COUNT * sizeof(int16_t)) {
+        dataSize = SPEAKER_SAMPLE_COUNT * sizeof(int16_t);
+    }
+    file.read((uint8_t*)responseAudio, dataSize);
+    file.close();
 }
 
 void playMelody() {
-    for (int i = 0; i < SPEAKER_SAMPLE_COUNT; i++) {
-        melody[i] = (int16_t)(8000.0 * sinf(2.0f * M_PI * 440.0 * i / SAMPLE_RATE));
-    }
+    loadAudio();
 
     size_t written;
-    i2s_write(I2S_SPEAKER_NUM, melody, SPEAKER_SAMPLE_COUNT * sizeof(int16_t), &written, portMAX_DELAY);
+    i2s_write(I2S_SPEAKER_NUM, responseAudio, SPEAKER_SAMPLE_COUNT * sizeof(int16_t), &written, portMAX_DELAY);
 }

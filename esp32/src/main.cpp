@@ -1,5 +1,6 @@
 #include <Global.h>
 #include <Arduino.h>
+#include <SPIFFS.h>
 #include <Ringbuffer.h>
 #include <Microphone.h>
 #include <Speaker.h>
@@ -16,6 +17,10 @@ void fillBuffer(int count) {
 
 void setup() {
     Serial.begin(115200);
+    if (!SPIFFS.begin(true)) {
+        Serial.println("SPIFFS mount failed!");
+        while (1);
+    }
     delay(1000);
 
     setupRingbuffer();
