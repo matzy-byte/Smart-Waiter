@@ -10,9 +10,6 @@
 #define I2S_MICROPHONE_SCK 14
 #define I2S_MICROPHONE_SD 39
 
-extern int32_t *rawMicrophoneSamples;
-extern int16_t *processedMicrophoneSamples;
-
 void setupMicrophone();
 void readMicrophoneSamples(int32_t* input, int16_t* output);
 

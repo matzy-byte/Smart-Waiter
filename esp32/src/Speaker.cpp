@@ -33,7 +33,7 @@ void setupSpeaker() {
 
 void playMelody() {
     for (int i = 0; i < SPEAKER_SAMPLE_COUNT; i++) {
-        melody[i] = 8000 * sin(2 * 3.14159 * 440 * i / SAMPLE_RATE);
+        melody[i] = (int16_t)(8000.0 * sinf(2.0f * M_PI * 440.0 * i / SAMPLE_RATE));
     }
 
     size_t written;

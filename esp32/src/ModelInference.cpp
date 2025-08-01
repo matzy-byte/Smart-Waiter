@@ -97,7 +97,7 @@ bool runInference(int16_t *samples) {
     prob_juan = std::min(1.0f, std::max(0.0f, prob_juan));
     Serial.println(prob_juan);
 
-    if (prob_juan > 0.95) {
+    if (prob_juan > 0.95f) {
         return true;
     }
     return false;

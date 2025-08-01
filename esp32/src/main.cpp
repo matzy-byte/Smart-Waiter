@@ -1,33 +1,48 @@
 #include <Global.h>
 #include <Arduino.h>
+#include <Ringbuffer.h>
 #include <Microphone.h>
 #include <Speaker.h>
 #include <ModelInference.h>
+
+int correct = 0;
+
+void fillBuffer(int count) {
+    for (int i = 0; i < count; i++) {
+        readMicrophoneSamples(rawMicrophoneSamples, processedMicrophoneSamples);
+        writeBuffer(processedMicrophoneSamples);
+    }
+}
 
 void setup() {
     Serial.begin(115200);
     delay(1000);
 
+    setupRingbuffer();
     setupMicrophone();
     setupSpeaker();
     setupModel();
 
     Serial.println("System ready. Listening for \"juan\"...");
     delay(1000);
-    
-    readMicrophoneSamples(rawMicrophoneSamples, processedMicrophoneSamples);
-    
-    if (runInference(processedMicrophoneSamples)) {
-        playMelody();
-        delay(5000);
-    }
+
+    //Fill buffer
+    fillBuffer(AUDIO_SLICES - 1);
 }
 
 void loop() {
     readMicrophoneSamples(rawMicrophoneSamples, processedMicrophoneSamples);
+    writeBuffer(processedMicrophoneSamples);
     
-    if (runInference(processedMicrophoneSamples)) {
+    if (runInference(readBuffer())) {
+        correct++;
+    } else {
+        correct = 0;
+    }
+
+    if (correct >= 3) {
         playMelody();
-        delay(5000);
+        correct = 0;
+        fillBuffer(AUDIO_SLICES);
     }
 }

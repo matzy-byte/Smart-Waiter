@@ -1,8 +1,4 @@
 #include <Microphone.h>
-#include <Arduino.h>
-
-int32_t *rawMicrophoneSamples = nullptr;
-int16_t *processedMicrophoneSamples = nullptr;
 
 void setupMicrophone() {
     i2s_config_t config = {
@@ -29,9 +25,6 @@ void setupMicrophone() {
     i2s_driver_install(I2S_MICROPHONE_NUM, &config, 0, NULL);
     i2s_set_pin(I2S_MICROPHONE_NUM, &pinConfig);
     i2s_zero_dma_buffer(I2S_MICROPHONE_NUM);
-
-    rawMicrophoneSamples = (int32_t *)heap_caps_malloc(MICROPHONE_SAMPLE_COUNT * sizeof(int32_t), MALLOC_CAP_SPIRAM);
-    processedMicrophoneSamples = (int16_t *)heap_caps_malloc(MICROPHONE_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 }
 
 void readMicrophoneSamples(int32_t *input, int16_t *output) {
