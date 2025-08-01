@@ -1,10 +1,8 @@
+#include <Global.h>
 #include <Arduino.h>
 #include <Microphone.h>
 #include <Speaker.h>
 #include <ModelInference.h>
-
-#define SAMPLE_RATE 16000
-#define SAMPLE_COUNT (SAMPLE_RATE * 1)
 
 void setup() {
     Serial.begin(115200);
@@ -14,18 +12,22 @@ void setup() {
     setupSpeaker();
     setupModel();
 
-    delay(1000);
-
     Serial.println("System ready. Listening for \"juan\"...");
-}
-
-void loop() {
-    readMicrophoneSamples(rawSamples, SAMPLE_COUNT);
-    downsample(rawSamples, processesSamples);
+    delay(1000);
     
-    if (runInference(processesSamples)) {
+    readMicrophoneSamples(rawMicrophoneSamples, processedMicrophoneSamples);
+    
+    if (runInference(processedMicrophoneSamples)) {
         playMelody();
         delay(5000);
     }
-    delay(100);
+}
+
+void loop() {
+    readMicrophoneSamples(rawMicrophoneSamples, processedMicrophoneSamples);
+    
+    if (runInference(processedMicrophoneSamples)) {
+        playMelody();
+        delay(5000);
+    }
 }

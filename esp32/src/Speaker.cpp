@@ -28,14 +28,14 @@ void setupSpeaker() {
     i2s_set_pin(I2S_SPEAKER_NUM, &pinConfig);
     i2s_zero_dma_buffer(I2S_SPEAKER_NUM);
 
-    melody = (int16_t *)heap_caps_malloc(SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    melody = (int16_t *)heap_caps_malloc(SPEAKER_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 }
 
 void playMelody() {
-    for (int i = 0; i < SAMPLE_COUNT; i++) {
+    for (int i = 0; i < SPEAKER_SAMPLE_COUNT; i++) {
         melody[i] = 8000 * sin(2 * 3.14159 * 440 * i / SAMPLE_RATE);
     }
 
     size_t written;
-    i2s_write(I2S_SPEAKER_NUM, melody, SAMPLE_COUNT * sizeof(int16_t), &written, portMAX_DELAY);
+    i2s_write(I2S_SPEAKER_NUM, melody, SPEAKER_SAMPLE_COUNT * sizeof(int16_t), &written, portMAX_DELAY);
 }
