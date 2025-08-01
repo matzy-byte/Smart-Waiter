@@ -4,7 +4,7 @@ import keras
 
 
 FILE = "juan.wav"
-MODEL_FILE = "model/trained_model.keras"
+MODEL_FILE = "model/fully_trained.keras"
 
 
 def get_spectrogram(audio):

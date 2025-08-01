@@ -99,7 +99,8 @@ def main():
         steps_per_epoch=len(x_train) // BATCH_SIZE,
         epochs=EPOCHS,
         validation_data=validation_dataset,
-        callbacks=[model_checkpoint_callback]
+        callbacks=[model_checkpoint_callback],
+        class_weight={0: 0.889, 1: 1.143}
     )
 
     model.evaluate(test_dataset)
@@ -118,7 +119,8 @@ def main():
     model2.fit(
         complete_train_dataset,
         steps_per_epoch=len(complete_train_x) // BATCH_SIZE,
-        epochs=5
+        epochs=5,
+        class_weight={0: 0.889, 1: 1.143}
     )
     model2.save("model/fully_trained.keras")
 
