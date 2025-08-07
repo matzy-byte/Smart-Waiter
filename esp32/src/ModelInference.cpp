@@ -19,7 +19,7 @@ void setupModel() {
         return;
     }
 
-    static tflite::MicroMutableOpResolver<7> resolver;
+    static tflite::MicroMutableOpResolver<9> resolver;
     resolver.AddFullyConnected();
     resolver.AddConv2D();
     resolver.AddMaxPool2D();
@@ -89,10 +89,12 @@ void preprocessAudioToSpectrogram(int16_t *audio, int audio_len, float *output_t
 
 bool runInference(int16_t *samples) {
     preprocessAudioToSpectrogram(samples, INFERENCE_SAMPLE_COUNT, input->data.f);
+
     if (interpreter->Invoke() != kTfLiteOk) {
         Serial.println("Invoke failed");
         return false;
     }
+
     float prob_juan = output->data.f[0];
     prob_juan = std::min(1.0f, std::max(0.0f, prob_juan));
     Serial.println(prob_juan);

@@ -16,6 +16,9 @@
 extern int16_t* responseAudio;
 
 void setupSpeaker();
+void powerOnSpeaker();
+void powerOffSpeaker();
+bool loadAudio();
 void playMelody();
 
 #endif

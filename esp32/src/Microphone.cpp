@@ -8,8 +8,8 @@ void setupMicrophone() {
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .intr_alloc_flags = 0,
-        .dma_buf_count = 16,
-        .dma_buf_len = 512,
+        .dma_buf_count = 8,
+        .dma_buf_len = 64,
         .use_apll = false,
         .tx_desc_auto_clear = false,
         .fixed_mclk = 0
@@ -32,6 +32,6 @@ void readMicrophoneSamples(int32_t *input, int16_t *output) {
     i2s_read(I2S_MICROPHONE_NUM, input, MICROPHONE_SAMPLE_COUNT * sizeof(int32_t), &readBytes, portMAX_DELAY);
 
     for (int i = 0; i < MICROPHONE_SAMPLE_COUNT; i++) {
-        output[i] = (int16_t)(input[i] >> 16) + 3200;
+        output[i] = (int16_t)(((input[i] >> 16) + MICROPHONE_DC_OFFSET) * MICROPHONE_GAIN);
     }
 }

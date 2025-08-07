@@ -3,6 +3,17 @@
 int16_t *responseAudio;
 
 void setupSpeaker() {
+    responseAudio = (int16_t *)heap_caps_malloc(SPEAKER_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+
+    pinMode(I2S_SPEAKER_SCK, OUTPUT);
+    pinMode(I2S_SPEAKER_WS, OUTPUT);
+    pinMode(I2S_SPEAKER_SD, OUTPUT);
+    digitalWrite(I2S_SPEAKER_SCK, LOW);
+    digitalWrite(I2S_SPEAKER_WS, LOW);
+    digitalWrite(I2S_SPEAKER_SD, LOW);
+}
+
+void powerOnSpeaker() {
     i2s_config_t config = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
         .sample_rate = SAMPLE_RATE,
@@ -27,11 +38,19 @@ void setupSpeaker() {
     i2s_driver_install(I2S_SPEAKER_NUM, &config, 0, NULL);
     i2s_set_pin(I2S_SPEAKER_NUM, &pinConfig);
     i2s_zero_dma_buffer(I2S_SPEAKER_NUM);
-
-    responseAudio = (int16_t *)heap_caps_malloc(SPEAKER_SAMPLE_COUNT * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 }
 
-void loadAudio() {
+void powerOffSpeaker() {
+    i2s_stop(I2S_SPEAKER_NUM);
+    i2s_driver_uninstall(I2S_SPEAKER_NUM);
+}
+
+bool loadAudio() {
+    if (!SPIFFS.begin(true)) {
+        Serial.println("SPIFFS mount failed!");
+        return false;
+    }
+
     int randomNumber = (esp_random() % (5 - 1 + 1)) + 1;
     char filename[32];
     snprintf(filename, sizeof(filename), "/%s%d.wav", "Miguel", randomNumber);
@@ -40,7 +59,7 @@ void loadAudio() {
     File file = SPIFFS.open(filename, "rb");
     if (!file || file.isDirectory()) {
         Serial.println("File open failed");
-        return;
+        return false;
     }
     file.seek(44);
 
@@ -50,11 +69,21 @@ void loadAudio() {
     }
     file.read((uint8_t*)responseAudio, dataSize);
     file.close();
+
+    SPIFFS.end();
+    return true;
 }
 
 void playMelody() {
-    loadAudio();
+    if (!loadAudio()) {
+        Serial.println("Failed to load audio");
+        return;
+    }
+
+    powerOnSpeaker();
 
     size_t written;
     i2s_write(I2S_SPEAKER_NUM, responseAudio, SPEAKER_SAMPLE_COUNT * sizeof(int16_t), &written, portMAX_DELAY);
+
+    powerOffSpeaker();
 }
