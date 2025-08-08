@@ -13,7 +13,7 @@ float fft_input[2 * FFT_SIZE];
 float mag[FFT_SIZE / 2 + 1];
 
 void setupModel() {
-    model = tflite::GetModel(lite_model);
+    model = tflite::GetModel(q_lite_model);
     if (model->version() != TFLITE_SCHEMA_VERSION) {
         Serial.printf("Model schema mismatch: %d vs %d\n", model->version(), TFLITE_SCHEMA_VERSION);
         return;
@@ -27,6 +27,8 @@ void setupModel() {
     resolver.AddReshape();
     resolver.AddRelu();
     resolver.AddLogistic();
+    resolver.AddQuantize();
+    resolver.AddDequantize();
 
     static tflite::MicroErrorReporter micro_error_reporter;
     tflite::ErrorReporter *error_reporter = &micro_error_reporter;

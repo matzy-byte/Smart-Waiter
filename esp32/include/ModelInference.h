@@ -8,7 +8,7 @@
 #include <tensorflow/lite/micro/system_setup.h>
 #include <tensorflow/lite/schema/schema_generated.h>
 #include <tensorflow/lite/micro/micro_error_reporter.h>
-#include <LiteModel.h>
+#include <QLiteModel.h>
 #include <esp_dsp.h>
 #include <math.h>
 
