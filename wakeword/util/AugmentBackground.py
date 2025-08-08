@@ -4,8 +4,8 @@ import soundfile as sf
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift, Gain
 
 
-SOURCE_DIR = "data/_background"
-DEST_DIR = "data/noise"
+SOURCE_DIR = "wakeword/data/_background"
+DEST_DIR = "wakeword/data/noise"
 SAMPLE_RATE = 16000
 CHUNK_DURATION = 1.0
 AUGMENT_TIMES = 25

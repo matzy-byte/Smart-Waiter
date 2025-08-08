@@ -3,8 +3,8 @@ from audiomentations import Compose, PitchShift, TimeStretch, AddBackgroundNoise
 import soundfile as sf
 
 
-WAKEWORD_DIR = "data/juan"
-BACKGROUND_NOISE_DIR = "data/_background"
+WAKEWORD_DIR = "wakeword/data/juan"
+BACKGROUND_NOISE_DIR = "wakeword/data/_background"
 AUGMENTATIONS = 41
 AUGMENT = Compose([
     AddBackgroundNoise(sounds_path=BACKGROUND_NOISE_DIR, min_snr_db=5, max_snr_db=20, noise_rms="relative", p=0.4),

@@ -3,6 +3,7 @@
 **/model/*
 !/model/fully_trained.keras
 !/model/lite_model.tflite
+!/model/q_lite_model.tflite
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

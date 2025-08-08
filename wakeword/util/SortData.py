@@ -4,7 +4,7 @@ import random
 
 
 NONE_ROOT_DIR = "speech_commands"
-NONE_DESTINATION_DIR = "data/none"
+NONE_DESTINATION_DIR = "wakeword/data/none"
 NONE_SUBFOLDERS = ["backward", "bed", "bird", "cat", "dog", "down", "eight", "five", "follow", "forward", "four", "go",
               "happy", "house", "learn", "left", "marvin", "nine", "no", "off", "on", "one", "right", "seven",
               "sheila", "six", "stop", "three", "tree", "two", "up", "visual", "wow", "yes", "zero"]
@@ -12,7 +12,7 @@ NONE_TOTAL_TARGET_FILES = 50000
 NONE_FILES_PER_FOLDER = NONE_TOTAL_TARGET_FILES // len(NONE_SUBFOLDERS)
 
 JUAN_ROOT_DIR = "personal_juan_dataset"
-JUAN_DESTINATION_DIR = "data/juan"
+JUAN_DESTINATION_DIR = "wakeword/data/juan"
 
 
 def sort_speech_commands():
@@ -41,7 +41,7 @@ def sort_speech_commands():
             shutil.copy2(src_path, dest_path)
 
     background_src = os.path.join(NONE_ROOT_DIR, "_background_noise_")
-    background_dest = os.path.join("data", "_background")
+    background_dest = os.path.join("wakeword/data", "_background")
     shutil.copytree(background_src, background_dest, dirs_exist_ok=True)
 
 
@@ -62,7 +62,7 @@ def sort_personal_juan():
             shutil.copy2(src_path, dest_path)
     
     background_src = os.path.join(JUAN_ROOT_DIR, "_background")
-    background_dest = os.path.join("data", "_background")
+    background_dest = os.path.join("wakeword/data", "_background")
     shutil.copytree(background_src, background_dest, dirs_exist_ok=True)
 
 
