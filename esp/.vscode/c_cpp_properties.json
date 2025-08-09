@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "ESP-IDF",
+            "compilerPath": "${config:idf.toolsPathWin}\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32-elf-gcc.exe",
+            "includePath": [
+                "${config:idf.espIdfPathWin}/components/**",
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/**/components/**/include",
+                "${workspaceFolder}/**/managed_components/**"
+            ],
+            "browse": {
+                "path": [
+                    "${config:idf.espIdfPathWin}/components",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

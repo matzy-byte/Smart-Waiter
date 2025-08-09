@@ -1,0 +1,19 @@
+#include <ESPConfigurator.h>
+
+#include <esp_pm.h>
+#include <esp_wifi.h>
+#include <esp_bt.h>
+
+ESPConfigurator::ESPConfigurator() {
+    /*esp_pm_config_esp32s3_t pm_config = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 60,
+        .light_sleep_enable = true
+    };
+    esp_pm_configure(&pm_config);*/
+
+    esp_wifi_stop();
+    esp_wifi_deinit();
+    esp_bt_controller_disable();
+    esp_bt_mem_release(ESP_BT_MODE_BTDM);
+};

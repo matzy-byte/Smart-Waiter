@@ -51,6 +51,9 @@ void setupModel() {
 }
 
 void preprocessAudioToSpectrogram(int16_t *audio, int audio_len, float *output_tensor_data) {
+    float min_val = std::numeric_limits<float>::max();
+    float max_val = std::numeric_limits<float>::lowest();
+    
     for (int t = 0; t < SPECTROGRAM_W; t++) {
         int offset = t * FRAME_STEP;
 
@@ -85,7 +88,17 @@ void preprocessAudioToSpectrogram(int16_t *audio, int audio_len, float *output_t
 
             float log_val = log10f(avg + EPSILON);
             output_tensor_data[t * SPECTROGRAM_H + j] = log_val;
+
+            if (log_val < min_val) min_val = log_val;
+            if (log_val > max_val) max_val = log_val;
         }
+    }
+
+    float range = max_val - min_val;
+    if (range < 1e-6f) range = 1e-6f;
+
+    for (int idx = 0; idx < SPECTROGRAM_W * SPECTROGRAM_H; idx++) {
+        output_tensor_data[idx] = (output_tensor_data[idx] - min_val) / range;
     }
 }
 
