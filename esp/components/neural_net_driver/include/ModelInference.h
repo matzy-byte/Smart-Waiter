@@ -2,10 +2,10 @@
 #define MODEL_INFERENCE_H
 
 #include <stdint.h>
-#include <micro_mutable_op_resolver.h>
-#include <micro_interpreter.h>
-#include <micro_error_reporter.h>
-#include <schema_generated.h>
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
 
 typedef struct {
     const uint8_t* model_data;

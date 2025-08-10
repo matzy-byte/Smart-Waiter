@@ -1,7 +1,12 @@
 #include <Microphone.h>
 
+#include<esp_heap_caps.h>
+
 Microphone::Microphone(const MicrophoneConfig_t& config) {
     this->s_config = config;
+
+    this->raw_audio = (int32_t *)heap_caps_malloc(this->s_config.sample_count * sizeof(int32_t), MALLOC_CAP_SPIRAM);
+    this->processed_audio = (int16_t *)heap_caps_malloc(this->s_config.sample_count * sizeof(int16_t), MALLOC_CAP_SPIRAM);
 
     i2s_config_t i2s_config = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
@@ -33,11 +38,15 @@ Microphone::~Microphone() {
     i2s_driver_uninstall(this->s_config.i2s_port); 
 }
 
-void Microphone::readMicrophoneSamples(int32_t* input, int16_t* output) {
+int16_t* Microphone::readMicrophoneSamples() {
+    int16_t* output_buffer = nullptr;
     size_t readBytes = 0;
-    i2s_read(this->s_config.i2s_port, input, this->s_config.sample_count * sizeof(int32_t), &readBytes, portMAX_DELAY);
+    i2s_read(this->s_config.i2s_port, this->raw_audio, this->s_config.sample_count * sizeof(int32_t), &readBytes, portMAX_DELAY);
 
     for (int i = 0; i < this->s_config.sample_count; i++) {
-        output[i] = (int16_t)(((input[i] >> 16) + this->s_config.dc_offset) * this->s_config.gain);
+        this->processed_audio[i] = (int16_t)(((this->raw_audio[i] >> 16) + this->s_config.dc_offset) * this->s_config.gain);
     }
+
+    output_buffer = this->processed_audio;
+    return output_buffer;
 }

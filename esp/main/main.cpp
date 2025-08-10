@@ -1,8 +1,10 @@
-#include <Microphone.h>
 #include <RingBuffer.h>
-#include <Speaker.h>
+#include <Microphone.h>
 #include <ModelInference.h>
 #include <QLiteModel.h>
+#include <Speaker.h>
+
+#include <driver/gpio.h>
 
 #define SAMPLE_RATE 16000
 #define AUDIO_SLICES 8
@@ -12,6 +14,12 @@
 #define MICROPHONE_SAMPLE_COUNT (SAMPLE_RATE / AUDIO_SLICES)
 #define INFERENCE_SAMPLE_COUNT (SAMPLE_RATE * 1)
 #define SPEAKER_SAMPLE_COUNT (SAMPLE_RATE * 5)
+
+RingBufferConfig_t ring_config = {
+    .databuffer_sample_count = DATABUFFER_SAMPLE_COUNT,
+    .microphone_sample_count = MICROPHONE_SAMPLE_COUNT,
+    .inference_sample_count = INFERENCE_SAMPLE_COUNT
+};
 
 MicrophoneConfig_t mic_config = {
     .i2s_port = I2S_NUM_0,
@@ -46,22 +54,23 @@ ModelInferenceConfig_t model_config = {
     .audio_len = INFERENCE_SAMPLE_COUNT
 };
 
-RingBuffer ring_buffer(MICROPHONE_SAMPLE_COUNT, DATABUFFER_SAMPLE_COUNT, INFERENCE_SAMPLE_COUNT);
+RingBuffer ring_buffer(ring_config);
 Microphone microphone(mic_config);
 Speaker speaker(spk_config);
 ModelInference model(model_config);
 
-void inference_task(void *pvParameters) {
-    
+void fill_buffer() {
+    for (int i = 0; i < AUDIO_SLICES - 1; i++) {
+        ring_buffer.write(microphone.readMicrophoneSamples());
+    }
 }
 
 extern "C" void app_main() {
-    xTaskCreate(
-        inference_task,
-        "InferenceTask",
-        4096,
-        NULL,
-        5,
-        NULL
-    );
+    while (true) {
+        ring_buffer.write(microphone.readMicrophoneSamples());
+
+        if (model.runInference(ring_buffer.read())) {
+            printf("SUCCESS");
+        }
+    }
 };

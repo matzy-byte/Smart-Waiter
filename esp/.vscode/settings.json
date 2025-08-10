@@ -19,5 +19,6 @@
 ],
 "files.associations": {
     "random": "cpp"
-}
+},
+"idf.flashType": "UART"
 }

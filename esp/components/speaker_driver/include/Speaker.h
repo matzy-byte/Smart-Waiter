@@ -2,6 +2,7 @@
 #define SPEAKER_H
 
 #include <driver/i2s.h>
+#include <driver/gpio.h>
 
 typedef struct {
     i2s_port_t i2s_port;
@@ -15,6 +16,7 @@ typedef struct {
 class Speaker {
     private:
         SpeakerConfig_t s_config;
+
         int16_t *response_audio_buffer;
         size_t response_audio_size;
     
