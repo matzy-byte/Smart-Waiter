@@ -4,7 +4,6 @@ idf_component_register(
     SRCS "${src_files}"
     INCLUDE_DIRS "include"
     REQUIRES
-        driver
         esp-tflite-micro
         esp-dsp
 )

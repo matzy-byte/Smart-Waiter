@@ -1,10 +1,5 @@
 build/
 sdkconfig.old
 
-spiffs/*
-managed_components/*
-
-.vscode/
-.devcontainer/
-
-!**/*.gitkeep
+managed_components/
+spiffs/

@@ -1,44 +1,43 @@
-#include <ModelInference.h>
+#include <neural_net.h>
 
-#include <stdint.h>
 #include <esp_heap_caps.h>
 #include <esp_dsp.h>
 #include <math.h>
 
-ModelInference::ModelInference(const ModelInferenceConfig_t& config) {
+NeuralNet::NeuralNet(const NeuralNetConfig_t& config) {
     this->s_config = config;
-
-    this->tensor_arena = (uint8_t*)heap_caps_malloc(this->s_config.tensor_arena_size, MALLOC_CAP_SPIRAM);
+    this->tensor_arena = (uint8_t*) heap_caps_malloc(this->s_config.tensor_arena_size * sizeof(uint8_t), MALLOC_CAP_INTERNAL);
 
     this->model = tflite::GetModel(this->s_config.model_data);
 
-    this->op_resolver.AddFullyConnected();
-    this->op_resolver.AddConv2D();
-    this->op_resolver.AddMaxPool2D();
-    this->op_resolver.AddSoftmax();
-    this->op_resolver.AddReshape();
-    this->op_resolver.AddRelu();
-    this->op_resolver.AddLogistic();
-    this->op_resolver.AddQuantize();
-    this->op_resolver.AddDequantize();
+    this->resolver.AddFullyConnected();
+    this->resolver.AddConv2D();
+    this->resolver.AddMaxPool2D();
+    this->resolver.AddSoftmax();
+    this->resolver.AddReshape();
+    this->resolver.AddRelu();
+    this->resolver.AddLogistic();
+    this->resolver.AddQuantize();
+    this->resolver.AddDequantize();
 
-    static tflite::MicroInterpreter static_interpreter(this->model, this->op_resolver, this->tensor_arena, this->s_config.tensor_arena_size, nullptr, nullptr);
+    static tflite::MicroInterpreter static_interpreter(model, resolver, this->tensor_arena, this->s_config.tensor_arena_size, nullptr, nullptr);
     this->interpreter = &static_interpreter;
     if (this->interpreter->AllocateTensors() != kTfLiteOk) {
+        printf("Cannot allocate tensors");
         return;
     }
-    
+
     this->input = this->interpreter->input(0);
     this->output = this->interpreter->output(0);
 
-    this->hann_window = (float*)heap_caps_malloc(this->s_config.frame_len * sizeof(float), MALLOC_CAP_SPIRAM);
-    this->fft_input = (float*)heap_caps_malloc(2 * this->s_config.fft_size * sizeof(float), MALLOC_CAP_SPIRAM);
-    this->mag = (float*)heap_caps_malloc((this->s_config.fft_size / 2 + 1) * sizeof(float), MALLOC_CAP_SPIRAM);
+    this->hann_window = (float*)heap_caps_malloc(this->s_config.frame_len * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->fft_input = (float*)heap_caps_malloc(2 * this->s_config.fft_size * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->mag = (float*)heap_caps_malloc((this->s_config.fft_size / 2 + 1) * sizeof(float), MALLOC_CAP_INTERNAL);
     dsps_fft2r_init_fc32(NULL, CONFIG_DSP_MAX_FFT_SIZE);
     dsps_wind_hann_f32(this->hann_window, this->s_config.frame_len);
 };
 
-ModelInference::~ModelInference() {
+NeuralNet::~NeuralNet() {
     if (this->interpreter) delete this->interpreter;
     if (this->tensor_arena) heap_caps_free(this->tensor_arena);
     if (this->hann_window) heap_caps_free(this->hann_window);
@@ -46,7 +45,7 @@ ModelInference::~ModelInference() {
     if (this->mag) heap_caps_free(this->mag);
 };
 
-void ModelInference::preprocessAudioToSpectrogram(int16_t* audio, int audio_len, float* output_tensor_data) {
+void NeuralNet::preprocessAudio(int16_t* samples, float* output_tensor_data) {
     float min_val = std::numeric_limits<float>::max();
     float max_val = std::numeric_limits<float>::lowest();
 
@@ -54,14 +53,14 @@ void ModelInference::preprocessAudioToSpectrogram(int16_t* audio, int audio_len,
         int offset = t * this->s_config.frame_step;
 
         for (int i = 0; i < this->s_config.frame_len; i++) {
-            float sample = (offset + i < audio_len) ? ((float)audio[offset + i] / 32768.0f) : 0.0f;
+            float sample = (offset + i < this->s_config.audio_len) ? ((float) samples[offset + i] / 32768.0f) : 0.0f;
             sample *= this->hann_window[i];
             this->fft_input[2 * i] = sample;
             this->fft_input[2 * i + 1] = 0.0f; 
         }
 
-        dsps_fft2r_fc32((float *)this->fft_input, this->s_config.fft_size);
-        dsps_bit_rev_fc32((float *)this->fft_input, this->s_config.fft_size);
+        dsps_fft2r_fc32((float*) this->fft_input, this->s_config.fft_size);
+        dsps_bit_rev_fc32((float*) this->fft_input, this->s_config.fft_size);
 
         for (int i = 0; i <= this->s_config.fft_size / 2; i++) {
             float real = this->fft_input[i * 2];
@@ -99,18 +98,18 @@ void ModelInference::preprocessAudioToSpectrogram(int16_t* audio, int audio_len,
     }
 };
 
-bool ModelInference::runInference(int16_t* samples) {
-    this->preprocessAudioToSpectrogram(samples, this->s_config.audio_len, this->input->data.f);
+bool NeuralNet::runInference(int16_t* samples) {
+    this->preprocessAudio(samples, this->input->data.f);
 
     if (this->interpreter->Invoke() != kTfLiteOk) {
+        printf("NO INVOKATION");
         return false;
     }
 
     float prob_juan = this->output->data.f[0];
-    prob_juan = std::min(1.0f, std::max(0.0f, prob_juan));
     printf("%f\n", prob_juan);
 
-    if (prob_juan > 0.95f) {
+    if (prob_juan > 0.98f) {
         return true;
     }
     return false;
