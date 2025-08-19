@@ -3,10 +3,6 @@
 #include <neural_net.h>
 #include <q_lite_model.h>
 
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
 #define SAMPLE_RATE 16000
 #define AUDIO_SLICES 8
 #define MICROPHONE_DC_OFFSET -3440
