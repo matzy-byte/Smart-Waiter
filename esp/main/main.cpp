@@ -13,13 +13,13 @@
 #define INFERENCE_SAMPLE_COUNT (SAMPLE_RATE * 1)
 #define SPEAKER_SAMPLE_COUNT (SAMPLE_RATE * 5)
 
-RingBufferConfig_t ring_buffer_config = {
+static const RingBufferConfig_t ring_buffer_config = {
     .data_buffer_sample_count = DATABUFFER_SAMPLE_COUNT,
     .microphone_buffer_sample_count = MICROPHONE_SAMPLE_COUNT,
     .inference_buffer_sample_count = INFERENCE_SAMPLE_COUNT
 };
 
-MicrophoneConfig_t microphone_config = {
+static const MicrophoneConfig_t microphone_config = {
     .sample_rate = SAMPLE_RATE,
     .sample_count = MICROPHONE_SAMPLE_COUNT,
     .gain = MICROPHONE_GAIN,
@@ -30,9 +30,9 @@ MicrophoneConfig_t microphone_config = {
     .pin_din = (gpio_num_t) 39
 };
 
-NeuralNetConfig_t neural_net_config = {
+static const NeuralNetConfig_t neural_net_config = {
     .model_data = q_lite_model,
-    .tensor_arena_size = 100 * 1024,
+    .tensor_arena_size = (75 * 1024),
     .frame_len = 256,
     .frame_step = 128,
     .fft_size = 256,
@@ -43,10 +43,10 @@ NeuralNetConfig_t neural_net_config = {
     .audio_len = INFERENCE_SAMPLE_COUNT
 };
 
+static NeuralNet neural_net(neural_net_config);
 static Microphone microphone(microphone_config);
 static RingBuffer ring_buffer(ring_buffer_config);
-static NeuralNet neural_net(neural_net_config);
-int detections = 0;
+static int detections = 0;
 
 void fillBuffer() {
     for (int i = 0; i < AUDIO_SLICES - 1; i++) {

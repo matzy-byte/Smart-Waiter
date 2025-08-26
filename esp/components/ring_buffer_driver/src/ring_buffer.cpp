@@ -16,19 +16,19 @@ RingBuffer::~RingBuffer() {
 };
 
 void RingBuffer::writeBuffer(int16_t* input) {
-        size_t new_index = (this->index + this->s_config.microphone_buffer_sample_count) % this->s_config.data_buffer_sample_count;
+    size_t new_index = (this->index + this->s_config.microphone_buffer_sample_count) % this->s_config.data_buffer_sample_count;
 
-        if (new_index < this->index) {
-            size_t first_part = (this->s_config.data_buffer_sample_count - this->index);
-            memcpy(this->data_buffer + this->index, input, first_part * sizeof(int16_t));
-            memcpy(this->data_buffer, input + first_part, new_index * sizeof(int16_t));
-            index = new_index;
-            return;
-        }
-
-        memcpy(this->data_buffer + this->index, input, s_config.microphone_buffer_sample_count * sizeof(int16_t));
+    if (new_index < this->index) {
+        size_t first_part = (this->s_config.data_buffer_sample_count - this->index);
+        memcpy(this->data_buffer + this->index, input, first_part * sizeof(int16_t));
+        memcpy(this->data_buffer, input + first_part, new_index * sizeof(int16_t));
         index = new_index;
+        return;
     }
+
+    memcpy(this->data_buffer + this->index, input, s_config.microphone_buffer_sample_count * sizeof(int16_t));
+    index = new_index;
+}
 
 int16_t* RingBuffer::readBuffer() {
     size_t read_start_index = (this->index - this->s_config.inference_buffer_sample_count + this->s_config.data_buffer_sample_count) % this->s_config.data_buffer_sample_count;

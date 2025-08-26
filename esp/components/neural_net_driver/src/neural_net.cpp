@@ -6,7 +6,7 @@
 
 NeuralNet::NeuralNet(const NeuralNetConfig_t& config) {
     this->s_config = config;
-    this->tensor_arena = (uint8_t*) heap_caps_malloc(this->s_config.tensor_arena_size * sizeof(uint8_t), MALLOC_CAP_INTERNAL);
+    this->tensor_arena = (uint8_t*) heap_caps_aligned_alloc(16, this->s_config.tensor_arena_size * sizeof(uint8_t), MALLOC_CAP_INTERNAL);
 
     this->model = tflite::GetModel(this->s_config.model_data);
 
@@ -30,9 +30,9 @@ NeuralNet::NeuralNet(const NeuralNetConfig_t& config) {
     this->input = this->interpreter->input(0);
     this->output = this->interpreter->output(0);
 
-    this->hann_window = (float*)heap_caps_malloc(this->s_config.frame_len * sizeof(float), MALLOC_CAP_INTERNAL);
-    this->fft_input = (float*)heap_caps_malloc(2 * this->s_config.fft_size * sizeof(float), MALLOC_CAP_INTERNAL);
-    this->mag = (float*)heap_caps_malloc((this->s_config.fft_size / 2 + 1) * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->hann_window = (float*) heap_caps_malloc(this->s_config.frame_len * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->fft_input = (float*) heap_caps_malloc(2 * this->s_config.fft_size * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->mag = (float*) heap_caps_malloc((this->s_config.fft_size / 2 + 1) * sizeof(float), MALLOC_CAP_INTERNAL);
     dsps_fft2r_init_fc32(NULL, CONFIG_DSP_MAX_FFT_SIZE);
     dsps_wind_hann_f32(this->hann_window, this->s_config.frame_len);
 };
