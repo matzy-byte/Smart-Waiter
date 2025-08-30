@@ -32,6 +32,8 @@ class NeuralNet {
         float* hann_window;
         float* fft_input;
         float* mag;
+        float* values;
+        size_t index;
 
         void preprocessAudio(int16_t* samples, float* output_tensor_data);
 

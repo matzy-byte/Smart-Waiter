@@ -5,7 +5,6 @@
 #include <stddef.h>
 
 typedef struct {
-    size_t data_buffer_sample_count;
     size_t microphone_buffer_sample_count;
     size_t inference_buffer_sample_count;
 } RingBufferConfig_t;
@@ -16,7 +15,6 @@ class RingBuffer {
 
         size_t index;
         int16_t* data_buffer;
-        int16_t* read_buffer;
 
     public:
         RingBuffer(const RingBufferConfig_t& config);
@@ -24,6 +22,7 @@ class RingBuffer {
 
         void writeBuffer(int16_t* input);
         int16_t* readBuffer();
+        void reset();
 };
 
 #endif

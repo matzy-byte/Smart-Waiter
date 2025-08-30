@@ -33,6 +33,7 @@ NeuralNet::NeuralNet(const NeuralNetConfig_t& config) {
     this->hann_window = (float*) heap_caps_malloc(this->s_config.frame_len * sizeof(float), MALLOC_CAP_INTERNAL);
     this->fft_input = (float*) heap_caps_malloc(2 * this->s_config.fft_size * sizeof(float), MALLOC_CAP_INTERNAL);
     this->mag = (float*) heap_caps_malloc((this->s_config.fft_size / 2 + 1) * sizeof(float), MALLOC_CAP_INTERNAL);
+    this->values = (float*) heap_caps_malloc(5 * sizeof(float), MALLOC_CAP_INTERNAL);
     dsps_fft2r_init_fc32(NULL, CONFIG_DSP_MAX_FFT_SIZE);
     dsps_wind_hann_f32(this->hann_window, this->s_config.frame_len);
 };
@@ -107,9 +108,22 @@ bool NeuralNet::runInference(int16_t* samples) {
     }
 
     float prob_juan = this->output->data.f[0];
-    printf("%f\n", prob_juan);
+    this->values[this->index] = prob_juan;
+    this->index++;
+    if (this->index >= 5) this->index = 0;
 
-    if (prob_juan > 0.98f) {
+    float sum = 0.0f;
+    for (int i = 0; i < 5; ++i) {
+        sum += this->values[i];
+    }
+    float average_prob = sum / 5.0f;
+
+    //printf("%f\n", average_prob);
+
+    if (average_prob >= 0.98f) {
+        for (int i = 0; i < 5; i++) {
+            this->values[i] = 0.0f;
+        }
         return true;
     }
     return false;
