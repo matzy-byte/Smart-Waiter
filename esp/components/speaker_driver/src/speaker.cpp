@@ -1,13 +1,22 @@
 #include <speaker.h>
 
+#include <driver/gpio.h>
 #include <esp_heap_caps.h>
 #include <portmacro.h>
 #include <esp_random.h>
 
 Speaker::Speaker(const SpeakerConfig_t& config) {
     this->s_config = config;
-    this->audio = (int16_t*) heap_caps_malloc(this->s_config.sample_count * sizeof(int16_t), MALLOC_CAP_INTERNAL);
+    this->audio = (int16_t*) heap_caps_malloc(4000 * sizeof(int16_t), MALLOC_CAP_INTERNAL);
     if (!this->audio) printf("NOT ALLOCATED");
+
+    gpio_set_direction(this->s_config.pin_bclk, GPIO_MODE_OUTPUT);
+    gpio_set_direction(this->s_config.pin_ws, GPIO_MODE_OUTPUT);
+    gpio_set_direction(this->s_config.pin_dout, GPIO_MODE_OUTPUT);
+
+    gpio_set_level(this->s_config.pin_bclk, 0);
+    gpio_set_level(this->s_config.pin_ws, 0);
+    gpio_set_level(this->s_config.pin_dout, 0);
 }
 
 Speaker::~Speaker() {
@@ -76,25 +85,17 @@ void Speaker::playAudio() {
         return;
     }
 
-    fseek(f, 0, SEEK_END);
-    long file_size = ftell(f);
-    rewind(f);
-
-    if (file_size <= 44) {
-        printf("Invalid WAV file (too small): %s", filename);
-        fclose(f);
-        return;
-    }
-
-    fseek(f, 44, SEEK_SET);
-    size_t audio_size = file_size - 44;
-
-    size_t read = fread(this->audio, 1, audio_size, f);
-    fclose(f);
-
+    size_t bytes_read;
+    esp_err_t ret;
     size_t bytes_written = 0;
-    esp_err_t ret = i2s_channel_write(this->tx_handle, this->audio, read, &bytes_written, portMAX_DELAY);
-    if (ret != ESP_OK) {
-        printf("i2s_channel_write failed: %s", esp_err_to_name(ret));
+
+    while ((bytes_read = fread(this->audio, 1, 4000 * sizeof(int16_t), f)) > 0) {
+        ret = i2s_channel_write(this->tx_handle, this->audio, bytes_read, &bytes_written, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            printf("i2s_channel_write failed: %s\n", esp_err_to_name(ret));
+            break;
+        }
     }
+
+    fclose(f);
 }

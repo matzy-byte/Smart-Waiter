@@ -120,7 +120,7 @@ bool NeuralNet::runInference(int16_t* samples) {
 
     //printf("%f\n", average_prob);
 
-    if (average_prob >= 0.98f) {
+    if (average_prob >= 0.95f) {
         for (int i = 0; i < 5; i++) {
             this->values[i] = 0.0f;
         }

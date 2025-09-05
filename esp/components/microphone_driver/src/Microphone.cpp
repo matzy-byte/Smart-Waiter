@@ -42,7 +42,7 @@ Microphone::Microphone(const MicrophoneConfig_t& config) {
     i2s_channel_init_std_mode(this->rx_handle, &i2s_config);
     i2s_channel_enable(this->rx_handle);
 
-    printf("I2S channel successfully initialized and enabled\n");
+    //printf("I2S channel successfully initialized and enabled\n");
 };
 
 Microphone::~Microphone() {

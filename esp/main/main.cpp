@@ -4,6 +4,8 @@
 #include <q_lite_model.h>
 #include <speaker.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <esp_littlefs.h>
 
 #define SAMPLE_RATE 16000
@@ -33,7 +35,7 @@ static const MicrophoneConfig_t microphone_config = {
 
 static const NeuralNetConfig_t neural_net_config = {
     .model_data = q_lite_model,
-    .tensor_arena_size = 100480,
+    .tensor_arena_size = 100 * 1024,
     .frame_len = 256,
     .frame_step = 128,
     .fft_size = 256,
@@ -54,24 +56,13 @@ static const SpeakerConfig_t speaker_config = {
 };
 
 void fillBuffer(Microphone& microphone, RingBuffer& ring_buffer) {
-    for (int i = 0; i < 3 * AUDIO_SLICES; i++) {
+    for (int i = 0; i < AUDIO_SLICES - 1; i++) {
         ring_buffer.writeBuffer(microphone.readMicrophoneSamples());
+        vTaskDelay(1);
     }
 }
 
-extern "C" void app_main(void) {
-    esp_vfs_littlefs_conf_t conf = {
-        .base_path = "/littlefs",
-        .partition_label = "storage",
-    };
-
-    esp_err_t ret = esp_vfs_littlefs_register(&conf);
-    if (ret != ESP_OK) {
-        printf("Failed to mount LittleFS (%s)\n", esp_err_to_name(ret));
-        return;
-    }
-    printf("LittleFS mounted successfully\n");
-
+void detection_task(void* args) {
     NeuralNet *neural_net = new NeuralNet(neural_net_config);
     RingBuffer *ring_buffer = new RingBuffer(ring_buffer_config);
     Microphone *microphone = new Microphone(microphone_config);
@@ -79,17 +70,37 @@ extern "C" void app_main(void) {
 
     if (!neural_net || !ring_buffer || !microphone || !speaker) {
         printf("Failed to allocate one or more objects!\n");
+        vTaskDelete(NULL);
         return;
     }
-
+    
     fillBuffer(*microphone, *ring_buffer);
+
     while (true) {
         ring_buffer->writeBuffer(microphone->readMicrophoneSamples());
+
         if (neural_net->runInference(ring_buffer->readBuffer())) {
-            //printf("\nPLAY MUSIC!\n");
             speaker->playMelody();
             ring_buffer->reset();
             fillBuffer(*microphone, *ring_buffer);
         }
+
+        vTaskDelay(1);
     }
+
+    vTaskDelete(NULL);
+}
+
+extern "C" void app_main(void) {
+    esp_vfs_littlefs_conf_t conf = {
+        .base_path = "/littlefs",
+        .partition_label = "storage",
+    };
+    esp_err_t ret = esp_vfs_littlefs_register(&conf);
+    if (ret != ESP_OK) {
+        printf("Failed to mount LittleFS (%s)\n", esp_err_to_name(ret));
+        return;
+    }
+    
+    xTaskCreate(detection_task, "DetectionTask", 8192, NULL, 5, NULL);
 }

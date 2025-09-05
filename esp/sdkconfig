@@ -746,6 +746,15 @@ CONFIG_EFUSE_MAX_BLK_LEN=256
 # end of eFuse Bit Manager
 
 #
+# ADC and ADC Calibration
+#
+# CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM is not set
+# CONFIG_ADC_CONTINUOUS_ISR_IRAM_SAFE is not set
+# CONFIG_ADC_CONTINUOUS_FORCE_USE_ADC2_ON_C3_S3 is not set
+# CONFIG_ADC_ENABLE_DEBUG_LOG is not set
+# end of ADC and ADC Calibration
+
+#
 # Common ESP-related
 #
 CONFIG_ESP_ERR_TO_NAME_LOOKUP=y
@@ -1545,6 +1554,28 @@ CONFIG_SPI_FLASH_SUPPORT_MXIC_OPI_CHIP=y
 
 CONFIG_SPI_FLASH_ENABLE_ENCRYPTED_READ_WRITE=y
 # end of SPI Flash driver
+
+#
+# Ultra Low Power (ULP) Co-processor
+#
+CONFIG_ULP_COPROC_ENABLED=y
+# CONFIG_ULP_COPROC_TYPE_FSM is not set
+CONFIG_ULP_COPROC_TYPE_RISCV=y
+CONFIG_ULP_COPROC_RESERVE_MEM=4096
+
+#
+# ULP RISC-V Settings
+#
+# CONFIG_ULP_RISCV_INTERRUPT_ENABLE is not set
+CONFIG_ULP_RISCV_UART_BAUDRATE=9600
+CONFIG_ULP_RISCV_I2C_RW_TIMEOUT=500
+# end of ULP RISC-V Settings
+
+#
+# ULP Debugging Options
+#
+# end of ULP Debugging Options
+# end of Ultra Low Power (ULP) Co-processor
 
 #
 # Virtual file system
