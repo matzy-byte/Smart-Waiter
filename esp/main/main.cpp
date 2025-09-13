@@ -1,3 +1,31 @@
+#include <esp_sleep.h>
+#include <ulp_riscv.h>
+#include <ulp_adc.h>
+#include <ulp_main.h>
+#include <esp_adc/adc_continuous.h>
+
+extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
+extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
+static void init_ulp_program(void) {
+    ulp_adc_cfg_t cfg = {
+        .adc_n    = ADC_UNIT_1,
+        .channel  = ADC_CHANNEL_0,
+        .atten    = ADC_ATTEN_DB_12,
+        .width    = ADC_BITWIDTH_DEFAULT,
+        .ulp_mode = ADC_ULP_MODE_RISCV,
+    };
+
+    ESP_ERROR_CHECK(ulp_adc_init(&cfg));
+
+    esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
+    ESP_ERROR_CHECK(err);
+
+    ulp_set_wakeup_period(0, 20000);
+
+    err = ulp_riscv_run();
+    ESP_ERROR_CHECK(err);
+}
+
 #include <ring_buffer.h>
 #include <microphone.h>
 #include <neural_net.h>
@@ -82,7 +110,9 @@ void detection_task(void* args) {
         if (neural_net->runInference(ring_buffer->readBuffer())) {
             speaker->playMelody();
             ring_buffer->reset();
-            fillBuffer(*microphone, *ring_buffer);
+            esp_sleep_enable_ulp_wakeup();
+            esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+            esp_deep_sleep_start();
         }
 
         vTaskDelay(1);
@@ -91,16 +121,36 @@ void detection_task(void* args) {
     vTaskDelete(NULL);
 }
 
+void sleep_task(void* args) {
+    vTaskDelay(pdMS_TO_TICKS(30000));
+    esp_sleep_enable_ulp_wakeup();
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    esp_deep_sleep_start();
+
+    vTaskDelete(NULL);
+}
+
 extern "C" void app_main(void) {
-    esp_vfs_littlefs_conf_t conf = {
-        .base_path = "/littlefs",
-        .partition_label = "storage",
-    };
-    esp_err_t ret = esp_vfs_littlefs_register(&conf);
-    if (ret != ESP_OK) {
-        printf("Failed to mount LittleFS (%s)\n", esp_err_to_name(ret));
-        return;
-    }
+    esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
     
-    xTaskCreate(detection_task, "DetectionTask", 8192, NULL, 5, NULL);
+    if (wakeup_cause == ESP_SLEEP_WAKEUP_ULP) {
+        esp_vfs_littlefs_conf_t conf = {
+            .base_path = "/littlefs",
+            .partition_label = "storage",
+        };
+        esp_err_t ret = esp_vfs_littlefs_register(&conf);
+        if (ret != ESP_OK) {
+            printf("Failed to mount LittleFS (%s)\n", esp_err_to_name(ret));
+            return;
+        }
+        
+        xTaskCreate(detection_task, "DetectionTask", 8192, NULL, 5, NULL);
+        xTaskCreate(sleep_task, "SleepTask", 2048, NULL, 1, NULL);
+    } else {
+        init_ulp_program();
+        esp_sleep_enable_ulp_wakeup();
+        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+        esp_deep_sleep_start();
+    }
+    return;
 }

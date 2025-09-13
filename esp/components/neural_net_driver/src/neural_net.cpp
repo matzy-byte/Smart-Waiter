@@ -113,15 +113,15 @@ bool NeuralNet::runInference(int16_t* samples) {
     if (this->index >= 5) this->index = 0;
 
     float sum = 0.0f;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 6; ++i) {
         sum += this->values[i];
     }
     float average_prob = sum / 5.0f;
 
     //printf("%f\n", average_prob);
 
-    if (average_prob >= 0.95f) {
-        for (int i = 0; i < 5; i++) {
+    if (average_prob >= 0.99f) {
+        for (int i = 0; i < 6; i++) {
             this->values[i] = 0.0f;
         }
         return true;
