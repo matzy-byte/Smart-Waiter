@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import keras
 import os
+import random
 from GenerateDatasets import get_spectrogram
 
 
@@ -10,33 +11,27 @@ TFLITE_MODEL_PATH = "wakeword/model/q_lite_model.tflite"
 
 
 def load_data():
-    base_dir = "wakeword/data/representative_dataset"
-    all_files = [f for f in os.listdir(base_dir) if f.endswith(".wav")]
-    spectrograms = []
-    for filename in all_files:
-        filepath = os.path.join(base_dir, filename)
-        audio_binary = tf.io.read_file(filepath)
-        audio_tensor = tf.audio.decode_wav(audio_binary)
-        audio = tf.reshape(audio_tensor.audio, [-1])
-        spectrograms.append(get_spectrogram(audio))
-
-    return spectrograms
+    base, classes = "wakeword/data", {"juan":0.4,"noise":0.5,"none":0.1}
+    files = {c:[f for f in os.listdir(os.path.join(base,c)) if f.endswith(".wav")] for c in classes}
+    total = 1000
+    specs = []
+    for c, r in classes.items():
+        for f in random.sample(files[c], min(int(r*total), len(files[c]))):
+            path = os.path.join(base, c, f)
+            audio = tf.reshape(tf.audio.decode_wav(tf.io.read_file(path)).audio, [-1])
+            spec = get_spectrogram(audio)
+            if spec.shape[0] == 124:
+                specs.append(spec)
+                arr = spec.numpy().flatten()
+                print(f"{c}/{f}: min:{np.min(arr)}, max:{np.max(arr)}")
+    return specs
 
 
 def main():
     data = load_data()
 
-    # for debug
-    flat_values = []
-    for spec in data:
-        flat_values.extend(spec.flatten())
-
-    flat_values = np.array(flat_values)
-    print("Min value:", np.min(flat_values))
-    print("Max value:", np.max(flat_values))
-
     def representative_data_gen():
-        for i in range(min(100, len(data))):
+        for i in range(min(1000, len(data))):
             yield [np.expand_dims(data[i], axis=[0, -1])]
 
     model = keras.models.load_model(KERAS_MODEL_PATH)

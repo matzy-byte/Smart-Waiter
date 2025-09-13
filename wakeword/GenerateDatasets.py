@@ -45,7 +45,8 @@ def get_spectrogram(audio):
     )
 
     spectrogram = tf.squeeze(spectrogram, axis=[0, -1])
-    spectrogram = np.log10(spectrogram + 1e-6)
+    spectrogram = tf.math.log(spectrogram + 1e-6) / tf.math.log(tf.constant(10.0))
+    spectrogram = (spectrogram - tf.reduce_min(spectrogram)) / (tf.reduce_max(spectrogram) - tf.reduce_min(spectrogram) + 1e-6)
     return spectrogram
 
 
