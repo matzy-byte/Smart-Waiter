@@ -18,9 +18,9 @@ def shuffle_datasets(datasets):
 
 
 def main():
-    training = np.load("data/training_spectrogram.npz")
-    validation = np.load("data/validation_spectrogram.npz")
-    test = np.load("data/test_spectrogram.npz")
+    training = np.load("wakeword/data/training_spectrogram.npz")
+    validation = np.load("wakeword/data/validation_spectrogram.npz")
+    test = np.load("wakeword/data/test_spectrogram.npz")
 
     x_train, y_train = training["X"], training["Y"]
     x_val, y_val = validation["X"], validation["Y"]
@@ -87,7 +87,7 @@ def main():
         metrics=["accuracy"]
     )
     model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
-        filepath="model/checkpoint.keras",
+        filepath="wakeword/model/checkpoint.keras",
         monitor="val_accuracy",
         mode="max",
         save_best_only=True
@@ -104,7 +104,7 @@ def main():
     )
 
     model.evaluate(test_dataset)
-    model.save("model/trained_model.keras")
+    model.save("wakeword/model/trained_model.keras")
 
     complete_train_x = np.concatenate((x_train, x_val, x_test))
     del x_train, x_val, x_test
@@ -115,14 +115,14 @@ def main():
     complete_train_dataset = tf.data.Dataset.from_tensor_slices((complete_train_x, complete_train_y)) \
                                             .repeat().batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
-    model2 = keras.models.load_model("model/trained_model.keras")
+    model2 = keras.models.load_model("wakeword/model/trained_model.keras")
     model2.fit(
         complete_train_dataset,
         steps_per_epoch=len(complete_train_x) // BATCH_SIZE,
         epochs=5,
         class_weight={0: 0.889, 1: 1.143}
     )
-    model2.save("model/fully_trained.keras")
+    model2.save("wakeword/model/fully_trained.keras")
 
 
 if __name__ == "__main__":

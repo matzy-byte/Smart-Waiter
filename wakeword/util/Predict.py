@@ -1,32 +1,11 @@
 import tensorflow as tf
 import numpy as np
 import keras
+from GenerateDatasets import get_spectrogram
 
 
 FILE = "juan.wav"
-MODEL_FILE = "model/fully_trained.keras"
-
-
-def get_spectrogram(audio):
-    stft = tf.signal.stft(
-        audio,
-        frame_length=256,
-        frame_step=128
-    )
-    spectrogram = tf.abs(stft)
-    spectrogram = tf.expand_dims(spectrogram, axis=0)
-    spectrogram = tf.expand_dims(spectrogram, axis=-1)
-
-    spectrogram = tf.nn.avg_pool2d(
-        spectrogram,
-        ksize=[1, 1, 6, 1],
-        strides=[1, 1, 6, 1],
-        padding="SAME"
-    )
-
-    spectrogram = tf.squeeze(spectrogram, axis=[0, -1])
-    spectrogram = np.log10(spectrogram + 1e-6)
-    return spectrogram
+MODEL_FILE = "wakeword/model/fully_trained.keras"
 
 
 def load_and_process_file(filename):

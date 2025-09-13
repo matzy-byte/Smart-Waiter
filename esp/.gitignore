@@ -1,0 +1,7 @@
+.vscode/
+
+build/
+sdkconfig.old
+
+managed_components/
+littlefs/

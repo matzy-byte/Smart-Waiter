@@ -14,7 +14,7 @@ TEST_SIZE = 0.1
 
 
 def get_files(label):
-    return tf.io.gfile.glob(f"data/{label}/*.wav")
+    return tf.io.gfile.glob(f"wakeword/data/{label}/*.wav")
 
 
 def is_valid_file(file):
@@ -45,7 +45,8 @@ def get_spectrogram(audio):
     )
 
     spectrogram = tf.squeeze(spectrogram, axis=[0, -1])
-    spectrogram = np.log10(spectrogram + 1e-6)
+    spectrogram = tf.math.log(spectrogram + 1e-6) / tf.math.log(tf.constant(10.0))
+    spectrogram = (spectrogram - tf.reduce_min(spectrogram)) / (tf.reduce_max(spectrogram) - tf.reduce_min(spectrogram) + 1e-6)
     return spectrogram
 
 
@@ -110,9 +111,9 @@ def main():
     val_specs, val_labels = zip(*VALIDATE)
     test_specs, test_labels = zip(*TEST)
 
-    np.savez_compressed("data/training_spectrogram.npz", X=np.stack(train_specs), Y=np.array(train_labels))
-    np.savez_compressed("data/validation_spectrogram.npz", X=np.stack(val_specs), Y=np.array(val_labels))
-    np.savez_compressed("data/test_spectrogram.npz", X=np.stack(test_specs), Y=np.array(test_labels))
+    np.savez_compressed("wakeword/data/training_spectrogram.npz", X=np.stack(train_specs), Y=np.array(train_labels))
+    np.savez_compressed("wakeword/data/validation_spectrogram.npz", X=np.stack(val_specs), Y=np.array(val_labels))
+    np.savez_compressed("wakeword/data/test_spectrogram.npz", X=np.stack(test_specs), Y=np.array(test_labels))
 
 
 if __name__ == "__main__":
