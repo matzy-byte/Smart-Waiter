@@ -8,6 +8,10 @@ The system will wake up due to a recorded and detected wake word , load a audio 
 storage media and play it. This repository involves two projects. First the ESP32 flash
 and secondly the wake word detection.
 
+## Shoutout
+Big shoutout to [atomic14](https://github.com/atomic14) and his project [diy-alexa](https://github.com/atomic14/diy-alexa).
+This is where I took inspiration and guidlines on how to make this project work.
+
 ## How It Works
 
 ### Wake Word Detection
