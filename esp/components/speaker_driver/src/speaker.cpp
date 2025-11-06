@@ -75,7 +75,7 @@ void Speaker::deactivateSpeaker() {
 }
 
 void Speaker::playAudio() {
-    int randomNumber = (random() % 5) + 1;
+    int randomNumber = (esp_random() % 5) + 1;
     char filename[32];
     snprintf(filename, sizeof(filename), "/littlefs/Miguel%d.wav", randomNumber);
 
